@@ -1,7 +1,12 @@
 package com.example.notification.config;
 
-import org.springframework.amqp.core.*;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.ExchangeBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,32 +20,35 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue queue() {
-        return new Queue(QUEUE);
+
+        return QueueBuilder
+                .durable(QUEUE)
+                .build();
     }
 
     @Bean
     public TopicExchange exchange() {
-        return new TopicExchange(EXCHANGE);
+
+        return ExchangeBuilder
+                .topicExchange(EXCHANGE)
+                .durable(true)
+                .build();
     }
 
     @Bean
-    public Binding binding(Queue queue, TopicExchange exchange) {
-        return BindingBuilder.bind(queue).to(exchange).with(ROUTING_KEY);
+    public Binding binding(
+            Queue queue,
+            TopicExchange exchange
+    ) {
+
+        return BindingBuilder
+                .bind(queue)
+                .to(exchange)
+                .with(ROUTING_KEY);
     }
 
     @Bean
-    public MessageConverter converter() {
-        Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
-        org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper typeMapper = 
-            new org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper();
-        
-        typeMapper.setTrustedPackages("*");
-        
-        java.util.Map<String, Class<?>> idClassMapping = new java.util.HashMap<>();
-        idClassMapping.put("com.example.order.dto.Notification", com.example.notification.entity.Notification.class);
-        typeMapper.setIdClassMapping(idClassMapping);
-        
-        converter.setJavaTypeMapper(typeMapper);
-        return converter;
+    public MessageConverter jsonMessageConverter() {
+        return new JacksonJsonMessageConverter();
     }
 }
